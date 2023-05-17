@@ -1,6 +1,33 @@
+profile = "custom"
 # configuration file for dotnet-releaser
 [msbuild]
 project = "WasabiNostr.sln"
+configuration = "Release"
+[msbuild.properties]
+PublishTrimmed = false
+PublishReadyToRun = true
+[test]
+run_tests_for_debug = false
+[coverage]
+enable = false
 [github]
 user = "Kukks"
 repo = "WasabiNostr"
+[nuget]
+publish = false
+# Create zip files only for Windows platforms
+[[pack]]
+rid = ["win-x64", "win-arm", "win-arm64"]
+kinds = ["zip"]
+# Default targets for Linux/Ubuntu Debian compatible distro with debian and tar packages
+[[pack]]
+rid = ["linux-x64", "linux-arm", "linux-arm64"]
+kinds = ["deb", "tar"]
+# Default targets for Linux/Redhat compatible distro with rpm and tar packages
+[[pack]]
+rid = ["rhel-x64"]
+kinds = ["rpm", "tar"]
+# Default targets for macOS, only tar files for this platform
+[[pack]]
+rid = ["osx-x64", "osx-arm64"]
+kinds = ["tar"]

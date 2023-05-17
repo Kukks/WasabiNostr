@@ -14,12 +14,12 @@
 }
 else if (ApplicationState.WasabiConfigDetected is false)
 {
-    <MudAlert Severity="Severity.Error">The Wasabi config file was not detected</MudAlert>
+    <MudAlert Severity="Severity.Error" style="overflow-wrap: break-word;" class="mb-1">The Wasabi config file was not detected</MudAlert>
     <MudButton Disabled="ApplicationState.Loading" Variant="Variant.Filled" Color="Color.Primary" OnClick="() => ApplicationState.DetectWasabi()">Detect Wasabi</MudButton>
 }
 else if (ApplicationState.WasabiConfigDetected is true)
 {
-    <MudAlert Severity="Severity.Success">The Wasabi config file was detected</MudAlert>
+    <MudAlert Severity="Severity.Success" class="mb-1">The Wasabi config file was detected</MudAlert>
     @if (ApplicationState.WasabiConfigError)
     {
         <MudAlert Severity="Severity.Error">There was an error reading the Wasabi config file</MudAlert>
@@ -27,11 +27,11 @@ else if (ApplicationState.WasabiConfigDetected is true)
     }
     else if (ApplicationState.NetworkTypeDetected is not null)
     {
-        <MudAlert Severity="Severity.Success">You are currently configured to use @ApplicationState.NetworkTypeDetected </MudAlert>
+        <MudAlert Severity="Severity.Success" class="mb-1">You are currently configured to use @ApplicationState.NetworkTypeDetected </MudAlert>
 
         @if (ApplicationState.Coordinator is not null)
         {
-            <MudAlert Severity="Severity.Success">The Wasabi coordinator is set to @ApplicationState.Coordinator </MudAlert>
+            <MudAlert Severity="Severity.Success" class="mb-1" style="overflow-wrap: break-word;">The Wasabi coordinator is currently set to @ApplicationState.Coordinator </MudAlert>
 
 
             <MudPaper Outlined="true" Class="pb-0">

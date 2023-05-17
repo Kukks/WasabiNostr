@@ -6,6 +6,11 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <OutputType>WinExe</OutputType>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <PackageProjectUrl>https://github.com/kukks/WasabiNostr</PackageProjectUrl>
+        <PackageReadmeFile>readme.md</PackageReadmeFile>
+        <Version>1.0.0</Version>
     </PropertyGroup>
 
     <ItemGroup>
@@ -14,7 +19,9 @@
       <PackageReference Include="Photino.Blazor" Version="2.6.0" />
     </ItemGroup>
     <ItemGroup>
-      <Folder Include="Properties\" />
+        <Content Update="wwwroot\**">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
     
 
