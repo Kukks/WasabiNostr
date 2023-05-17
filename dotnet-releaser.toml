@@ -1,0 +1,6 @@
+# configuration file for dotnet-releaser
+[msbuild]
+project = "WasabiNostr.sln"
+[github]
+user = "Kukks"
+repo = "WasabiNostr"

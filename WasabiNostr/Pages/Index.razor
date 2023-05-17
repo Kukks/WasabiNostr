@@ -1,0 +1,331 @@
+﻿@page "/"
+@using WasabiNostr.Web.State
+@using NNostr.Client
+@inject ApplicationState ApplicationState
+@inject ISnackbar SnackbarService
+@implements IDisposable
+@if (ApplicationState.Loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7"/>
+}
+@if (ApplicationState.WasabiConfigDetected is null)
+{
+    <MudButton Disabled="ApplicationState.Loading" Variant="Variant.Filled" Color="Color.Primary" OnClick="() => ApplicationState.DetectWasabi()">Detect Wasabi</MudButton>
+}
+else if (ApplicationState.WasabiConfigDetected is false)
+{
+    <MudAlert Severity="Severity.Error">The Wasabi config file was not detected</MudAlert>
+    <MudButton Disabled="ApplicationState.Loading" Variant="Variant.Filled" Color="Color.Primary" OnClick="() => ApplicationState.DetectWasabi()">Detect Wasabi</MudButton>
+}
+else if (ApplicationState.WasabiConfigDetected is true)
+{
+    <MudAlert Severity="Severity.Success">The Wasabi config file was detected</MudAlert>
+    @if (ApplicationState.WasabiConfigError)
+    {
+        <MudAlert Severity="Severity.Error">There was an error reading the Wasabi config file</MudAlert>
+        <MudButton Disabled="ApplicationState.Loading" Variant="Variant.Filled" Color="Color.Primary" OnClick="() => ApplicationState.DetectWasabi()">Detect Wasabi</MudButton>
+    }
+    else if (ApplicationState.NetworkTypeDetected is not null)
+    {
+        <MudAlert Severity="Severity.Success">You are currently configured to use @ApplicationState.NetworkTypeDetected </MudAlert>
+
+        @if (ApplicationState.Coordinator is not null)
+        {
+            <MudAlert Severity="Severity.Success">The Wasabi coordinator is set to @ApplicationState.Coordinator </MudAlert>
+
+
+            <MudPaper Outlined="true" Class="pb-0">
+                @if (ApplicationState.Discovering)
+                {
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true"/>
+                }
+
+
+                <MudList >
+                    <MudListItem>
+                        <MudStack Row="true">
+                            <MudTextField @bind-Value="ApplicationState.Relay" Label="Nostr Relay" Variant="Variant.Text" InputType="InputType.Url"></MudTextField>
+
+                            <MudButton Disabled="ApplicationState.Loading" Variant="Variant.Filled" Color="ApplicationState.Discovering ? Color.Secondary : Color.Primary" OnClick="OnDiscoveryClick">@(ApplicationState.Discovering ? _connectingToRelay ? "Connecting to relay" : "Cancel Discovery" : "Start Discovery")</MudButton>
+
+                        </MudStack>
+                    </MudListItem>
+                    @if (ApplicationState.EventResults is not null)
+                    {
+                        var first = true;
+
+                        @foreach (var result in ApplicationState.EventResults.ToArray())
+                        {
+                            var endpoint = result.GetTaggedData(ApplicationState.EndpointTagIdentifier).FirstOrDefault();
+                            if (endpoint is null)
+                            {
+                                continue;
+                            }
+                            var isCurrent = endpoint == ApplicationState.Coordinator;
+                            if (!first)
+                            {
+                                <MudDivider/>
+                            }
+                            first = false;
+
+                            <MudListItem >
+                                <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                    <MudStack Justify="Justify.Center" Spacing="0">
+                                        <MudText Typo="Typo.body1">@result.Content</MudText>
+                                        <MudText Typo="Typo.body2">
+                                            @endpoint
+                                        </MudText>
+                                        <MudText Typo="Typo.body2">
+                                            Published @AsTimeAgo(result.CreatedAt.Value)
+                                        </MudText>
+                                    </MudStack>
+                                    <div>
+                                        <MudButtonGroup Color="Color.Primary" Variant="Variant.Filled">
+
+                                            <MudButton Color="@(isCurrent ? Color.Success : Color.Primary)" Disabled="isCurrent || ApplicationState.Loading" OnClick="() => Set(endpoint)">@(isCurrent ? "Current" : "Set")</MudButton>
+                                            <MudButton Color="Color.Secondary" Disabled="ApplicationState.Loading" OnClick="() => OpenParameters(result)">View parameters</MudButton>
+                                        </MudButtonGroup>
+                                    </div>
+                                </MudStack>
+
+                            </MudListItem>
+                        }
+                    }
+                    @if (ApplicationState.Discovering)
+                    {
+                        <MudListItem>
+
+                            <MudStack Row="true" Justify="Justify.SpaceBetween">
+
+                                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Animation="Animation.Wave" Height="80px" Width="70%"/>
+                                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Animation="Animation.Wave" Height="80px" Width="25%"/>
+                            </MudStack>
+                        </MudListItem>
+                    }
+
+                </MudList>
+
+            </MudPaper>
+@if (ApplicationState.ExpandedCoordinator is not null)
+{
+    <MudDialog IsVisible="(ApplicationState.ExpandedCoordinator != null)">
+        <TitleContent>
+            <MudText Typo="Typo.h6" Inline="true" Style="overflow-wrap: break-word;">
+                @ApplicationState.ExpandedCoordinator?.result.PublicKey
+            </MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudText Typo="Typo.body1">
+                @ApplicationState.ExpandedCoordinator?.result.Content
+            </MudText>
+            <MudList >
+                <MudListSubheader>Last round parameters</MudListSubheader>
+                <MudListItem>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText >
+                            Minimum inputs
+                        </MudText>
+                        <MudText >
+                            @ApplicationState.ExpandedCoordinator?.roundParameters.minInputCountByRound
+                        </MudText>
+                    </MudStack>
+                </MudListItem>
+                <MudListItem>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText >
+                            Maximum inputs
+                        </MudText>
+                        <MudText >
+                            @ApplicationState.ExpandedCoordinator?.roundParameters.maxInputCountByRound
+                        </MudText>
+                    </MudStack>
+                </MudListItem>
+                <MudListItem>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText >
+                            Fee
+                        </MudText>
+                        <MudText >
+                            @(ApplicationState.ExpandedCoordinator?.roundParameters.coordinationFeeRate.rate * 100)% + free under @(ApplicationState.ExpandedCoordinator?.roundParameters.coordinationFeeRate.plebsDontPayThreshold / 10000000m)) BTC + free remixing
+                        </MudText>
+                    </MudStack>
+                </MudListItem>
+                <MudListItem>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText >
+                            Input registration time
+                        </MudText>
+                        <MudText >
+                            @ApplicationState.ExpandedCoordinator?.roundParameters.standardInputRegistrationTimeout
+                        </MudText>
+                    </MudStack>
+                </MudListItem>
+                <MudListItem>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText >
+                            Allowed input types
+                        </MudText>
+                        <MudText >
+                            @string.Join(", ", ApplicationState.ExpandedCoordinator.Value.roundParameters.allowedInputTypes.Select(i => (ApplicationState.ScriptType) i))
+                        </MudText>
+                    </MudStack>
+                </MudListItem>
+                <MudListItem>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText >
+                            Allowed input amounts
+                        </MudText>
+                        <MudText >
+                            @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedInputAmounts.min / 10000000m) - @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedInputAmounts.max / 10000000m) BTC
+                        </MudText>
+                    </MudStack>
+
+                </MudListItem>
+                <MudListItem>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText >
+                            Allowed output types
+                        </MudText>
+                        <MudText >
+                            @string.Join(", ", ApplicationState.ExpandedCoordinator.Value.roundParameters.allowedOutputTypes.Select(i => (ApplicationState.ScriptType) i))
+                        </MudText>
+                    </MudStack>
+                </MudListItem>
+                <MudListItem>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                        <MudText >
+                            Allowed output amounts
+                        </MudText>
+                        <MudText >
+                            @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedOutputAmounts.min / 10000000m) - @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedOutputAmounts.max / 10000000m) BTC
+                        </MudText>
+                    </MudStack>
+
+                </MudListItem>
+            </MudList>
+
+            @* <pre>@JsonSerializer.Serialize(ApplicationState.ExpandedCoordinator?.roundParameters)</pre> *@
+        </DialogContent>
+        <DialogActions>
+            @{
+                var isCurrent = ApplicationState.ExpandedCoordinator?.result.GetTaggedData(ApplicationState.EndpointTagIdentifier).FirstOrDefault() == ApplicationState.Coordinator;
+            }
+            <MudButton Disabled="isCurrent || ApplicationState.Loading" Variant="Variant.Filled" Color="Color.Primary" OnClick="SetFromDialog" Class="px-10">@(isCurrent ? "Current coordinator" : "Set as coordinator")</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="() => ApplicationState.ExpandedCoordinator = null" Class="px-10">Close</MudButton>
+        </DialogActions>
+    </MudDialog>
+}
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Error">There was an error detecting the coordinator currently used</MudAlert>
+
+            <MudButton Disabled="ApplicationState.Loading" Variant="Variant.Filled" Color="Color.Primary" OnClick="() => ApplicationState.DetectWasabi()">Detect Wasabi</MudButton>
+        }
+    }
+}
+
+@code{
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ApplicationState.DetectWasabi();
+        ApplicationState.StateHasChanged += StateHasChanged;
+    }
+
+    private void StateHasChanged(object? sender, EventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ApplicationState.StateHasChanged -= StateHasChanged;
+    }
+
+    private bool _connectingToRelay;
+
+    private async Task OnDiscoveryClick()
+    {
+        if (ApplicationState.Discovering)
+        {
+            ApplicationState.CancelDiscovery();
+        }
+        else
+        {
+            try
+            {
+                _connectingToRelay = true;
+
+                await ApplicationState.Discover();
+            }
+            finally
+            {
+                _connectingToRelay = false;
+            }
+        }
+    }
+
+    private static string AsTimeAgo(DateTimeOffset dateTime)
+    {
+        var timeSpan = DateTimeOffset.Now.Subtract(dateTime);
+
+        return timeSpan.TotalSeconds switch
+        {
+            <= 60 => $"{timeSpan.Seconds} seconds ago",
+
+            _ => timeSpan.TotalMinutes switch
+            {
+                <= 1 => "about a minute ago",
+                < 60 => $"about {timeSpan.Minutes} minutes ago",
+                _ => timeSpan.TotalHours switch
+                {
+                    <= 1 => "about an hour ago",
+                    < 24 => $"about {timeSpan.Hours} hours ago",
+                    _ => timeSpan.TotalDays switch
+                    {
+                        <= 1 => "yesterday",
+                        <= 30 => $"about {timeSpan.Days} days ago",
+
+                        <= 60 => "about a month ago",
+                        < 365 => $"about {timeSpan.Days / 30} months ago",
+
+                        <= 365 * 2 => "about a year ago",
+                        _ => $"about {timeSpan.Days / 365} years ago"
+                        }
+                    }
+                }
+            };
+    }
+
+
+    private async Task OpenParameters(NostrEvent result)
+    {
+        await ApplicationState.FetchInfo(result);
+
+        if (ApplicationState.ExpandedCoordinator is null)
+            SnackbarService.Add($"Could not load a coinjoin round to show parameters", Severity.Error);
+    }
+
+    private async Task Set(string uri)
+    {
+        await ApplicationState.SetConfig(uri);
+        if (ApplicationState.Coordinator == uri)
+        {
+            SnackbarService.Add($"Coordinator has been set to {uri}", Severity.Success);
+
+            ApplicationState.ExpandedCoordinator = null;
+        }
+        else
+        {
+            SnackbarService.Add($"Coordinator could not be set", Severity.Error);
+        }
+    }
+
+    private async Task SetFromDialog()
+    {
+        var endpoint = ApplicationState.ExpandedCoordinator!.Value.result.GetTaggedData(ApplicationState.EndpointTagIdentifier).First();
+        await Set(endpoint);
+    }
+
+}

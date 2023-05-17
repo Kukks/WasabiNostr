@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <Platforms>AnyCPU;x64</Platforms>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <OutputType>WinExe</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="MudBlazor" Version="6.2.3" />
+      <PackageReference Include="NNostr.Client" Version="0.0.28" />
+      <PackageReference Include="Photino.Blazor" Version="2.6.0" />
+    </ItemGroup>
+    <ItemGroup>
+      <Folder Include="Properties\" />
+    </ItemGroup>
+    
+
+</Project>
