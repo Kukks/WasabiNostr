@@ -43,186 +43,213 @@ else if (ApplicationState.WasabiConfigDetected is true)
 
                 <MudList >
                     <MudListItem>
-                        <MudStack Row="true">
-                            <MudTextField @bind-Value="ApplicationState.Relay" Label="Nostr Relay" Variant="Variant.Text" InputType="InputType.Url"></MudTextField>
+                        <MudStack Row="true" Justify="Justify.SpaceBetween">
 
-                            <MudButton Disabled="ApplicationState.Loading" Variant="Variant.Filled" Color="ApplicationState.Discovering ? Color.Secondary : Color.Primary" OnClick="OnDiscoveryClick">@(ApplicationState.Discovering ? _connectingToRelay ? "Connecting to relay" : "Cancel Discovery" : "Start Discovery")</MudButton>
+                            <MudStack Class="flex-grow-1">
+                                @for (var index = 0; index < ApplicationState.Relays.Count; index++)
+                                {
+                                    var currIndex = index;
+                                    <MudTextField @bind-Value="ApplicationState.Relays[index]" Label="@($"Nostr Relay #{index + 1}")" Variant="Variant.Text" InputType="InputType.Url" Disabled="@(ApplicationState.Loading || ApplicationState.Discovering)" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Remove" OnAdornmentClick="() => ApplicationState.Relays.RemoveAt(currIndex)"></MudTextField>
+                                }
+                                @if (!ApplicationState.Loading && !ApplicationState.Discovering)
+                                {
+                                    <div>
+                                        <MudButton Disabled="ApplicationState.Loading" Variant="Variant.Filled" Color="ApplicationState.Discovering ? Color.Secondary : Color.Primary" OnClick="() => ApplicationState.Relays.Add(string.Empty)">Add relay</MudButton>
+                                    </div>
+                                }
 
+                            </MudStack>
+                            <div>
+                                <MudButton Size="Size.Large" Disabled="ApplicationState.Loading" Variant="Variant.Filled" Color="ApplicationState.Discovering ? Color.Secondary : Color.Primary" OnClick="OnDiscoveryClick">@(ApplicationState.Discovering ? _connectingToRelay ? "Connecting to relay" : "Cancel Discovery" : "Start Discovery")</MudButton>
+                            </div>
                         </MudStack>
                     </MudListItem>
-                    @if (ApplicationState.EventResults is not null)
-                    {
-                        var first = true;
+                </MudList>
+            </MudPaper>
 
-                        @foreach (var result in ApplicationState.EventResults.ToArray())
-                        {
-                            var endpoint = result.GetTaggedData(ApplicationState.EndpointTagIdentifier).FirstOrDefault();
-                            if (endpoint is null)
-                            {
-                                continue;
-                            }
-                            var isCurrent = endpoint == ApplicationState.Coordinator;
-                            if (!first)
-                            {
-                                <MudDivider/>
-                            }
-                            first = false;
+            @if (ApplicationState.EventResults is not null)
+            {
+                <MudPaper Outlined="true" Class="pb-0 mt-2" Elevation="1">
+                    <MudList >
+                        <MudListSubheader>
+                            Results
+                        </MudListSubheader>
+                        @{
+                            var first = true;
 
-                            <MudListItem >
-                                <MudStack Row="true" Justify="Justify.SpaceBetween">
-                                    <MudStack Justify="Justify.Center" Spacing="0">
-                                        <MudText Typo="Typo.body1">@result.Content</MudText>
-                                        <MudText Typo="Typo.body2">
-                                            @endpoint
-                                        </MudText>
-                                        <MudText Typo="Typo.body2">
-                                            Published @AsTimeAgo(result.CreatedAt.Value)
-                                        </MudText>
+                            @foreach (var result in ApplicationState.EventResults.ToArray())
+                            {
+                                var endpoint = result.GetTaggedData(ApplicationState.EndpointTagIdentifier).FirstOrDefault();
+                                if (endpoint is null)
+                                {
+                                    continue;
+                                }
+
+                                var isCurrent = endpoint == ApplicationState.Coordinator;
+                                if (!first)
+                                {
+                                    <MudDivider/>
+                                }
+
+                                first = false;
+
+                                <MudListItem >
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                        <MudStack Justify="Justify.Center" Spacing="0">
+                                            <MudText Typo="Typo.body1">@result.Content</MudText>
+                                            <MudText Typo="Typo.body2">
+                                                @endpoint
+                                            </MudText>
+                                            <MudText Typo="Typo.body2">
+                                                Published @AsTimeAgo(result.CreatedAt.Value)
+                                            </MudText>
+                                        </MudStack>
+                                        <div>
+                                            <MudButtonGroup Color="Color.Primary" Variant="Variant.Filled">
+
+                                                <MudButton Color="@(isCurrent ? Color.Success : Color.Primary)" Disabled="isCurrent || ApplicationState.Loading" OnClick="() => Set(endpoint)">@(isCurrent ? "Current" : "Set")</MudButton>
+                                                <MudButton Color="Color.Secondary" Disabled="ApplicationState.Loading" OnClick="() => OpenParameters(result)">View parameters</MudButton>
+                                            </MudButtonGroup>
+                                        </div>
                                     </MudStack>
-                                    <div>
-                                        <MudButtonGroup Color="Color.Primary" Variant="Variant.Filled">
 
-                                            <MudButton Color="@(isCurrent ? Color.Success : Color.Primary)" Disabled="isCurrent || ApplicationState.Loading" OnClick="() => Set(endpoint)">@(isCurrent ? "Current" : "Set")</MudButton>
-                                            <MudButton Color="Color.Secondary" Disabled="ApplicationState.Loading" OnClick="() => OpenParameters(result)">View parameters</MudButton>
-                                        </MudButtonGroup>
-                                    </div>
+                                </MudListItem>
+                            }
+                        }
+                        @if (ApplicationState.Discovering)
+                        {
+                            <MudListItem>
+
+                                <MudStack Row="true" Justify="Justify.SpaceBetween">
+
+                                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Animation="Animation.Wave" Height="80px" Width="70%"/>
+                                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Animation="Animation.Wave" Height="80px" Width="25%"/>
                                 </MudStack>
-
                             </MudListItem>
                         }
-                    }
-                    @if (ApplicationState.Discovering)
-                    {
-                        <MudListItem>
 
-                            <MudStack Row="true" Justify="Justify.SpaceBetween">
+                    </MudList>
 
-                                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Animation="Animation.Wave" Height="80px" Width="70%"/>
-                                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Animation="Animation.Wave" Height="80px" Width="25%"/>
-                            </MudStack>
-                        </MudListItem>
-                    }
+                </MudPaper>
+                <MudDialog IsVisible="@(ApplicationState.ExpandedCoordinator != null)">
+                    <TitleContent>
+                        <MudText Typo="Typo.h6" Inline="true" Style="overflow-wrap: break-word;">
+                            @ApplicationState.ExpandedCoordinator?.result.PublicKey
+                        </MudText>
+                    </TitleContent>
+                    <DialogContent>
+                        @if (ApplicationState.ExpandedCoordinator is not null)
+                        {
+                            <MudText Typo="Typo.body1">
+                                @ApplicationState.ExpandedCoordinator?.result.Content
+                            </MudText>
+                            <MudList >
+                                <MudListSubheader>Last round parameters</MudListSubheader>
+                                <MudListItem>
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                        <MudText >
+                                            Minimum inputs
+                                        </MudText>
+                                        <MudText >
+                                            @ApplicationState.ExpandedCoordinator?.roundParameters.minInputCountByRound
+                                        </MudText>
+                                    </MudStack>
+                                </MudListItem>
+                                <MudListItem>
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                        <MudText >
+                                            Maximum inputs
+                                        </MudText>
+                                        <MudText >
+                                            @ApplicationState.ExpandedCoordinator?.roundParameters.maxInputCountByRound
+                                        </MudText>
+                                    </MudStack>
+                                </MudListItem>
+                                <MudListItem>
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                        <MudText >
+                                            Fee
+                                        </MudText>
+                                        <MudText >
+                                            @(ApplicationState.ExpandedCoordinator?.roundParameters.coordinationFeeRate.rate * 100)% + free under @(ApplicationState.ExpandedCoordinator?.roundParameters.coordinationFeeRate.plebsDontPayThreshold / 10000000m)) BTC + free remixing
+                                        </MudText>
+                                    </MudStack>
+                                </MudListItem>
+                                <MudListItem>
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                        <MudText >
+                                            Input registration time
+                                        </MudText>
+                                        <MudText >
+                                            @ApplicationState.ExpandedCoordinator?.roundParameters.standardInputRegistrationTimeout
+                                        </MudText>
+                                    </MudStack>
+                                </MudListItem>
+                                <MudListItem>
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                        <MudText >
+                                            Allowed input types
+                                        </MudText>
+                                        <MudText >
+                                            @string.Join(", ", ApplicationState.ExpandedCoordinator.Value.roundParameters.allowedInputTypes.Select(i => (ApplicationState.ScriptType) i))
+                                        </MudText>
+                                    </MudStack>
+                                </MudListItem>
+                                <MudListItem>
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                        <MudText >
+                                            Allowed input amounts
+                                        </MudText>
+                                        <MudText >
+                                            @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedInputAmounts.min / 10000000m) - @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedInputAmounts.max / 10000000m) BTC
+                                        </MudText>
+                                    </MudStack>
 
-                </MudList>
+                                </MudListItem>
+                                <MudListItem>
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                        <MudText >
+                                            Allowed output types
+                                        </MudText>
+                                        <MudText >
+                                            @string.Join(", ", ApplicationState.ExpandedCoordinator.Value.roundParameters.allowedOutputTypes.Select(i => (ApplicationState.ScriptType) i))
+                                        </MudText>
+                                    </MudStack>
+                                </MudListItem>
+                                <MudListItem>
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                        <MudText >
+                                            Allowed output amounts
+                                        </MudText>
+                                        <MudText >
+                                            @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedOutputAmounts.min / 10000000m) - @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedOutputAmounts.max / 10000000m) BTC
+                                        </MudText>
+                                    </MudStack>
 
-            </MudPaper>
-@if (ApplicationState.ExpandedCoordinator is not null)
-{
-    <MudDialog IsVisible="(ApplicationState.ExpandedCoordinator != null)">
-        <TitleContent>
-            <MudText Typo="Typo.h6" Inline="true" Style="overflow-wrap: break-word;">
-                @ApplicationState.ExpandedCoordinator?.result.PublicKey
-            </MudText>
-        </TitleContent>
-        <DialogContent>
-            <MudText Typo="Typo.body1">
-                @ApplicationState.ExpandedCoordinator?.result.Content
-            </MudText>
-            <MudList >
-                <MudListSubheader>Last round parameters</MudListSubheader>
-                <MudListItem>
-                    <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText >
-                            Minimum inputs
-                        </MudText>
-                        <MudText >
-                            @ApplicationState.ExpandedCoordinator?.roundParameters.minInputCountByRound
-                        </MudText>
-                    </MudStack>
-                </MudListItem>
-                <MudListItem>
-                    <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText >
-                            Maximum inputs
-                        </MudText>
-                        <MudText >
-                            @ApplicationState.ExpandedCoordinator?.roundParameters.maxInputCountByRound
-                        </MudText>
-                    </MudStack>
-                </MudListItem>
-                <MudListItem>
-                    <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText >
-                            Fee
-                        </MudText>
-                        <MudText >
-                            @(ApplicationState.ExpandedCoordinator?.roundParameters.coordinationFeeRate.rate * 100)% + free under @(ApplicationState.ExpandedCoordinator?.roundParameters.coordinationFeeRate.plebsDontPayThreshold / 10000000m)) BTC + free remixing
-                        </MudText>
-                    </MudStack>
-                </MudListItem>
-                <MudListItem>
-                    <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText >
-                            Input registration time
-                        </MudText>
-                        <MudText >
-                            @ApplicationState.ExpandedCoordinator?.roundParameters.standardInputRegistrationTimeout
-                        </MudText>
-                    </MudStack>
-                </MudListItem>
-                <MudListItem>
-                    <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText >
-                            Allowed input types
-                        </MudText>
-                        <MudText >
-                            @string.Join(", ", ApplicationState.ExpandedCoordinator.Value.roundParameters.allowedInputTypes.Select(i => (ApplicationState.ScriptType) i))
-                        </MudText>
-                    </MudStack>
-                </MudListItem>
-                <MudListItem>
-                    <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText >
-                            Allowed input amounts
-                        </MudText>
-                        <MudText >
-                            @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedInputAmounts.min / 10000000m) - @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedInputAmounts.max / 10000000m) BTC
-                        </MudText>
-                    </MudStack>
+                                </MudListItem>
+                            </MudList>
+                        }
 
-                </MudListItem>
-                <MudListItem>
-                    <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText >
-                            Allowed output types
-                        </MudText>
-                        <MudText >
-                            @string.Join(", ", ApplicationState.ExpandedCoordinator.Value.roundParameters.allowedOutputTypes.Select(i => (ApplicationState.ScriptType) i))
-                        </MudText>
-                    </MudStack>
-                </MudListItem>
-                <MudListItem>
-                    <MudStack Row="true" Justify="Justify.SpaceBetween">
-                        <MudText >
-                            Allowed output amounts
-                        </MudText>
-                        <MudText >
-                            @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedOutputAmounts.min / 10000000m) - @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedOutputAmounts.max / 10000000m) BTC
-                        </MudText>
-                    </MudStack>
-
-                </MudListItem>
-            </MudList>
-
-            @* <pre>@JsonSerializer.Serialize(ApplicationState.ExpandedCoordinator?.roundParameters)</pre> *@
-        </DialogContent>
-        <DialogActions>
-            @{
-                var isCurrent = ApplicationState.ExpandedCoordinator?.result.GetTaggedData(ApplicationState.EndpointTagIdentifier).FirstOrDefault() == ApplicationState.Coordinator;
+                        @* <pre>@JsonSerializer.Serialize(ApplicationState.ExpandedCoordinator?.roundParameters)</pre> *@
+                    </DialogContent>
+                    <DialogActions>
+                        @{
+                            var isCurrent = ApplicationState.ExpandedCoordinator?.result.GetTaggedData(ApplicationState.EndpointTagIdentifier).FirstOrDefault() == ApplicationState.Coordinator;
+                        }
+                        <MudButton Disabled="isCurrent || ApplicationState.Loading" Variant="Variant.Filled" Color="Color.Primary" OnClick="SetFromDialog" Class="px-10">@(isCurrent ? "Current coordinator" : "Set as coordinator")</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="() => ApplicationState.ExpandedCoordinator = null" Class="px-10">Close</MudButton>
+                    </DialogActions>
+                </MudDialog>
             }
-            <MudButton Disabled="isCurrent || ApplicationState.Loading" Variant="Variant.Filled" Color="Color.Primary" OnClick="SetFromDialog" Class="px-10">@(isCurrent ? "Current coordinator" : "Set as coordinator")</MudButton>
-            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="() => ApplicationState.ExpandedCoordinator = null" Class="px-10">Close</MudButton>
-        </DialogActions>
-    </MudDialog>
-}
-        }
-        else
-        {
-            <MudAlert Severity="Severity.Error">There was an error detecting the coordinator currently used</MudAlert>
-
-            <MudButton Disabled="ApplicationState.Loading" Variant="Variant.Filled" Color="Color.Primary" OnClick="() => ApplicationState.DetectWasabi()">Detect Wasabi</MudButton>
         }
     }
+    else
+    {
+        <MudAlert Severity="Severity.Error">There was an error detecting the coordinator currently used</MudAlert>
+
+        <MudButton Disabled="ApplicationState.Loading" Variant="Variant.Filled" Color="Color.Primary" OnClick="() => ApplicationState.DetectWasabi()">Detect Wasabi</MudButton>
+    }
+}
 }
 
 @code{
@@ -292,23 +319,28 @@ else if (ApplicationState.WasabiConfigDetected is true)
 
                         <= 365 * 2 => "about a year ago",
                         _ => $"about {timeSpan.Days / 365} years ago"
-                        }
                     }
                 }
-            };
+            }
+        };
     }
 
 
     private async Task OpenParameters(NostrEvent result)
     {
-        await ApplicationState.FetchInfo(result);
-
-        if (ApplicationState.ExpandedCoordinator is null)
+        var error = await ApplicationState.FetchInfo(result);
+        if (error is not null)
+        {
+            SnackbarService.Add(error, Severity.Error);
+        }
+        else if (ApplicationState.ExpandedCoordinator is null)
             SnackbarService.Add($"Could not load a coinjoin round to show parameters", Severity.Error);
     }
 
     private async Task Set(string uri)
     {
+        uri = uri.Replace("https://btip.nl:23001", "https://kravens.duckdns.org:23001");
+        uri = uri.Replace("plugins/wabisabi-coordinator/plugins/wabisabi-coordinator", "plugins/wabisabi-coordinator");
         await ApplicationState.SetConfig(uri);
         if (ApplicationState.Coordinator == uri)
         {
@@ -325,7 +357,11 @@ else if (ApplicationState.WasabiConfigDetected is true)
     private async Task SetFromDialog()
     {
         var endpoint = ApplicationState.ExpandedCoordinator!.Value.result.GetTaggedData(ApplicationState.EndpointTagIdentifier).First();
+
+
+        https: //kravens.duckdns.org:23001/plugins/wabisabi-coordinator/wabisabi/status
         await Set(endpoint);
     }
 
 }
+

@@ -36,7 +36,11 @@ public class ApplicationState
     public bool WasabiConfigError { get; set; } = false;
     public string? NetworkTypeDetected { get; set; }
     public string? Coordinator { get; set; }
-    public string Relay { get; set; } = "wss://kukks.org/nostr";
+    public List<string> Relays { get; set; } =
+    [
+        "wss://kukks.org/nostr",
+        "wss://relay.primal.net"
+    ];
 
     public static int Kind = 15750;
     public static string TypeTagIdentifier = "type";
@@ -46,6 +50,7 @@ public class ApplicationState
 
     public bool Discovering => _tokenSource is not null && !_tokenSource.IsCancellationRequested;
     private CancellationTokenSource? _tokenSource;
+    private (NostrEvent result, RoundParameters roundParameters)? _expandedCoordinator;
 
 
     public async Task Discover()
@@ -59,7 +64,8 @@ public class ApplicationState
             EventResults = new();
             if (NetworkTypeDetected is null)
                 return;
-            Client = new NostrClient(new Uri(Relay));
+            Client = new CompositeNostrClient(Relays.Select(s => Uri.TryCreate(s, UriKind.Absolute, out var uri) ? uri : null)
+                .Where(u => u is not null).ToArray()!);
             await Client.Connect(cancellationToken);
             StateHasChanged?.Invoke(this, EventArgs.Empty);
             _ = Task.Run(async () =>
@@ -97,10 +103,12 @@ public class ApplicationState
 
     public List<NostrEvent>? EventResults { get; set; }
 
-    public NostrClient? Client { get; set; }
+    public INostrClient? Client { get; set; }
 
     private string GetCoordinatorConfigKey(string network)
     {
+        if(!network.EndsWith("net", StringComparison.InvariantCultureIgnoreCase))
+            network += "Net";
         return $"{network}CoordinatorUri";
     }
 
@@ -183,7 +191,7 @@ public class ApplicationState
         }
     }
 
-    public async Task FetchInfo(NostrEvent evt)
+    public async Task<string?> FetchInfo(NostrEvent evt)
     {
         await StartLoading();
 
@@ -192,36 +200,57 @@ public class ApplicationState
             var endpoint = evt.GetTaggedData(EndpointTagIdentifier).First();
 
             var client = new HttpClient();
+            
+            endpoint = endpoint.Replace("https://btip.nl:23001", "https://kravens.duckdns.org:23001");
+            endpoint = endpoint.Replace("plugins/wabisabi-coordinator/plugins/wabisabi-coordinator", "plugins/wabisabi-coordinator");
             var res = await client.PostAsync(new Uri(new Uri(endpoint), "wabisabi/status"),
                 new StringContent("{\"roundCheckpoints\": []}", Encoding.UTF8, MediaTypeNames.Application.Json));
             if (!res.IsSuccessStatusCode)
             {
-                return;
+                return "Could not connect";
             }
 
             var activeRounds = await res.Content.ReadFromJsonAsync<RootObject>();
             var lastRound = activeRounds.roundStates.MaxBy(states => DateTimeOffset.Parse(states.inputRegistrationEnd));
             if (lastRound is null)
             {
-                return;
+                return "No active rounds";
             }
 
             var roundCreatedEvent =
                 lastRound.coinjoinState.events.FirstOrDefault(events => events.Type == "RoundCreated");
             if (roundCreatedEvent is null)
             {
-                return;
+                return "No round created event";
             }
 
             ExpandedCoordinator = (evt, roundCreatedEvent.roundParameters);
+        }
+        catch (Exception e)
+        {
+            return "Error fetching round: "+ e.Message;
+            // ignored
         }
         finally
         {
             Loading = false;
         }
+
+        return null;
     }
 
-    public (NostrEvent result, RoundParameters roundParameters)? ExpandedCoordinator { get; set; }
+    public (NostrEvent result, RoundParameters roundParameters)? ExpandedCoordinator
+    {
+        get => _expandedCoordinator;
+        set
+        {
+            _expandedCoordinator = value;
+            
+            StateHasChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    public bool RelaysExpanded => !Discovering && !Loading;
 
     public void CancelDiscovery()
     {
