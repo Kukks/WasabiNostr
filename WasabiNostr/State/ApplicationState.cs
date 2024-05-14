@@ -66,7 +66,12 @@ public class ApplicationState
                 return;
             Client = new CompositeNostrClient(Relays.Select(s => Uri.TryCreate(s, UriKind.Absolute, out var uri) ? uri : null)
                 .Where(u => u is not null).ToArray()!);
-            await Client.Connect(cancellationToken);
+            
+            Client.StateChanged += (sender, args) =>
+            {
+                StateHasChanged?.Invoke(this, EventArgs.Empty);
+            };
+            await Client.ConnectAndWaitUntilConnected(cancellationToken);
             StateHasChanged?.Invoke(this, EventArgs.Empty);
             _ = Task.Run(async () =>
             {
@@ -90,6 +95,7 @@ public class ApplicationState
                         @event.PublicKey == evt.PublicKey && @event.CreatedAt < evt.CreatedAt);
                     EventResults?.Add(evt);
                     StateHasChanged?.Invoke(this, EventArgs.Empty);
+                    
                 }
 
                 Client.Dispose();
@@ -103,7 +109,7 @@ public class ApplicationState
 
     public List<NostrEvent>? EventResults { get; set; }
 
-    public INostrClient? Client { get; set; }
+    public CompositeNostrClient? Client { get; set; }
 
     private string GetCoordinatorConfigKey(string network)
     {

@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using WasabiNostr.Web.State
 @using NNostr.Client
+@using System.Net.WebSockets
 @inject ApplicationState ApplicationState
 @inject ISnackbar SnackbarService
 @implements IDisposable
@@ -49,8 +50,31 @@ else if (ApplicationState.WasabiConfigDetected is true)
                                 @for (var index = 0; index < ApplicationState.Relays.Count; index++)
                                 {
                                     var currIndex = index;
-                                    <MudTextField @bind-Value="ApplicationState.Relays[index]" Label="@($"Nostr Relay #{index + 1}")" Variant="Variant.Text" InputType="InputType.Url" Disabled="@(ApplicationState.Loading || ApplicationState.Discovering)" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Remove" OnAdornmentClick="() => ApplicationState.Relays.RemoveAt(currIndex)"></MudTextField>
-                                }
+                                    @if(ApplicationState.Discovering && ApplicationState.Client is { } composite && Uri.TryCreate(ApplicationState.Relays[index], UriKind.Absolute, out  var relayUri) && composite.States.TryGetValue(relayUri, out var relayState))
+                                    {
+                                        var icon = relayState switch
+                                        {
+                                            WebSocketState.Open => Icons.Material.Filled.CheckCircle,
+                                            WebSocketState.Connecting => Icons.Material.Filled.HourglassTop,
+                                           _ => Icons.Material.Filled.Stop
+                                        };
+                                        
+                                        var color = relayState switch
+                                        {
+                                            WebSocketState.Open => Color.Success,
+                                            WebSocketState.Connecting => Color.Warning,
+                                            _ => Color.Error
+                                        };
+                                        <MudTextField @bind-Value="ApplicationState.Relays[index]" Label="@($"Nostr Relay #{index + 1}")" Variant="Variant.Text" InputType="InputType.Url" Disabled="@(ApplicationState.Loading || ApplicationState.Discovering)" Adornment="Adornment.End" AdornmentIcon="@icon" AdornmentColor="@color" AdornmentAriaLabel="@relayState?.ToString()"></MudTextField>
+                                
+                                    }
+                                    else
+                                    {
+                                        <MudTextField @bind-Value="ApplicationState.Relays[index]" Label="@($"Nostr Relay #{index + 1}")" Variant="Variant.Text" InputType="InputType.Url" Disabled="@(ApplicationState.Loading || ApplicationState.Discovering)" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.RemoveCircle" OnAdornmentClick="() => ApplicationState.Relays.RemoveAt(currIndex)"></MudTextField>
+                                
+                                    }
+                                    
+                                   }
                                 @if (!ApplicationState.Loading && !ApplicationState.Discovering)
                                 {
                                     <div>
@@ -135,6 +159,7 @@ else if (ApplicationState.WasabiConfigDetected is true)
                     <TitleContent>
                         <MudText Typo="Typo.h6" Inline="true" Style="overflow-wrap: break-word;">
                             @ApplicationState.ExpandedCoordinator?.result.PublicKey
+                           
                         </MudText>
                     </TitleContent>
                     <DialogContent>
@@ -249,7 +274,6 @@ else if (ApplicationState.WasabiConfigDetected is true)
 
         <MudButton Disabled="ApplicationState.Loading" Variant="Variant.Filled" Color="Color.Primary" OnClick="() => ApplicationState.DetectWasabi()">Detect Wasabi</MudButton>
     }
-}
 }
 
 @code{
