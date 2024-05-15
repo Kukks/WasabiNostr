@@ -98,10 +98,6 @@ var options = new []{NetworkTypeDetected.ToLower(), $"{NetworkTypeDetected.ToLow
                     {
                         continue;
                     }
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        return;
-                    }
                     
                     EventResults?.RemoveAll(@event =>
                         @event.PublicKey == evt.PublicKey && @event.CreatedAt < evt.CreatedAt);
