@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Json;
 using System.Net.Mime;
+using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -38,7 +39,6 @@ public class ApplicationState
     public string? Coordinator { get; set; }
     public List<string> Relays { get; set; } =
     [
-        "wss://kukks.org/nostr",
         "wss://relay.primal.net"
     ];
 
@@ -70,6 +70,10 @@ public class ApplicationState
             Client.StateChanged += (sender, args) =>
             {
                 StateHasChanged?.Invoke(this, EventArgs.Empty);
+                if(Discovering && args.Item2 == WebSocketState.Closed)
+                {
+                    _ = Client.Connect(_tokenSource.Token);
+                }
             };
             await Client.ConnectAndWaitUntilConnected(cancellationToken);
             StateHasChanged?.Invoke(this, EventArgs.Empty);
@@ -80,26 +84,36 @@ public class ApplicationState
                                    new NostrSubscriptionFilter()
                                    {
                                        Kinds = new[] {Kind},
-                                       ExtensionData = new Dictionary<string, JsonElement>()
-                                       {
-                                           [$"#{TypeTagIdentifier}"] =
-                                               JsonSerializer.SerializeToElement(new[] {TypeTagValue}),
-                                           [$"#{NetworkTagIdentifier}"] =
-                                               JsonSerializer.SerializeToElement(new[]
-                                                   {NetworkTypeDetected.ToLowerInvariant()})
-                                       }
                                    }
                                }, false, cancellationToken))
                 {
+
+                    if(evt.GetTaggedData(TypeTagIdentifier)?.Any() is not true || !evt.GetTaggedData(TypeTagIdentifier).Contains(TypeTagValue, StringComparer.InvariantCultureIgnoreCase))
+                    {
+                        continue;
+                    }
+                    var network = evt.GetTaggedData(NetworkTagIdentifier);
+var options = new []{NetworkTypeDetected.ToLower(), $"{NetworkTypeDetected.ToLower()}net"};
+                    if(network?.Any(n => options.Contains(n, StringComparer.InvariantCultureIgnoreCase)) is not true)
+                    {
+                        continue;
+                    }
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+                    
                     EventResults?.RemoveAll(@event =>
                         @event.PublicKey == evt.PublicKey && @event.CreatedAt < evt.CreatedAt);
+                    
+                    
                     EventResults?.Add(evt);
                     StateHasChanged?.Invoke(this, EventArgs.Empty);
                     
                 }
 
                 Client.Dispose();
-            });
+            }, cancellationToken);
         }
         finally
         {

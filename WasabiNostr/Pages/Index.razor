@@ -117,11 +117,11 @@ else if (ApplicationState.WasabiConfigDetected is true)
 
                                 first = false;
 
-                                <MudListItem >
+                                <MudListItem  >
                                     <MudStack Row="true" Justify="Justify.SpaceBetween">
-                                        <MudStack Justify="Justify.Center" Spacing="0">
+                                        <MudStack Justify="Justify.Center" Spacing="0" Style="max-width: 75%" >
                                             <MudText Typo="Typo.body1">@result.Content</MudText>
-                                            <MudText Typo="Typo.body2">
+                                            <MudText Typo="Typo.body2" Style="overflow-wrap:break-word;">
                                                 @endpoint
                                             </MudText>
                                             <MudText Typo="Typo.body2">

@@ -15,7 +15,7 @@
 
     <ItemGroup>
       <PackageReference Include="MudBlazor" Version="6.19.1" />
-      <PackageReference Include="NNostr.Client" Version="0.0.45" />
+      <PackageReference Include="NNostr.Client" Version="0.0.48" />
       <PackageReference Include="Photino.Blazor" Version="2.7.0" />
     </ItemGroup>
     <ItemGroup>
