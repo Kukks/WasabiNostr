@@ -196,7 +196,7 @@ else if (ApplicationState.WasabiConfigDetected is true)
                                             Fee
                                         </MudText>
                                         <MudText >
-                                            @(ApplicationState.ExpandedCoordinator?.roundParameters.coordinationFeeRate.rate * 100)% + free under @(ApplicationState.ExpandedCoordinator?.roundParameters.coordinationFeeRate.plebsDontPayThreshold / 10000000m)) BTC + free remixing
+                                            @(ApplicationState.ExpandedCoordinator?.roundParameters.coordinationFeeRate.rate * 100)% + free under @(ApplicationState.ExpandedCoordinator?.roundParameters.coordinationFeeRate.plebsDontPayThreshold / 100000000m)) BTC + free remixing
                                         </MudText>
                                     </MudStack>
                                 </MudListItem>
@@ -226,7 +226,7 @@ else if (ApplicationState.WasabiConfigDetected is true)
                                             Allowed input amounts
                                         </MudText>
                                         <MudText >
-                                            @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedInputAmounts.min / 10000000m) - @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedInputAmounts.max / 10000000m) BTC
+                                            @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedInputAmounts.min / 100000000m) - @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedInputAmounts.max / 100000000m) BTC
                                         </MudText>
                                     </MudStack>
 
@@ -247,7 +247,7 @@ else if (ApplicationState.WasabiConfigDetected is true)
                                             Allowed output amounts
                                         </MudText>
                                         <MudText >
-                                            @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedOutputAmounts.min / 10000000m) - @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedOutputAmounts.max / 10000000m) BTC
+                                            @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedOutputAmounts.min / 100000000m) - @(ApplicationState.ExpandedCoordinator?.roundParameters.allowedOutputAmounts.max / 100000000m) BTC
                                         </MudText>
                                     </MudStack>
 
