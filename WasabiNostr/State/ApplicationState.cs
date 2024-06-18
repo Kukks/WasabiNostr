@@ -217,7 +217,6 @@ var options = new []{NetworkTypeDetected.ToLower(), $"{NetworkTypeDetected.ToLow
 
             var client = new HttpClient();
             
-            endpoint = endpoint.Replace("https://btip.nl:23001", "https://kravens.duckdns.org:23001");
             endpoint = endpoint.Replace("plugins/wabisabi-coordinator/plugins/wabisabi-coordinator", "plugins/wabisabi-coordinator");
             var res = await client.PostAsync(new Uri(new Uri(endpoint), "wabisabi/status"),
                 new StringContent("{\"roundCheckpoints\": []}", Encoding.UTF8, MediaTypeNames.Application.Json));
