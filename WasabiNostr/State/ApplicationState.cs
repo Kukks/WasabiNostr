@@ -123,7 +123,9 @@ var options = new []{NetworkTypeDetected.ToLower(), $"{NetworkTypeDetected.ToLow
 
     private string GetCoordinatorConfigKey(string network)
     {
-        if(!network.EndsWith("net", StringComparison.InvariantCultureIgnoreCase))
+        if (network == "mainnet")
+            network = "";
+        else if(!network.EndsWith("net", StringComparison.InvariantCultureIgnoreCase))
             network += "Net";
         return $"{network}CoordinatorUri";
     }
@@ -166,10 +168,6 @@ var options = new []{NetworkTypeDetected.ToLower(), $"{NetworkTypeDetected.ToLow
                     }
 
                     Coordinator = GetCoordinator(config, NetworkTypeDetected);
-                    if (Coordinator is null)
-                    {
-                        WasabiConfigError = true;
-                    }
                 }
             }
             else

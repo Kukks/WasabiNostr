@@ -30,12 +30,15 @@ else if (ApplicationState.WasabiConfigDetected is true)
     {
         <MudAlert Severity="Severity.Success" class="mb-1">You are currently configured to use @ApplicationState.NetworkTypeDetected </MudAlert>
 
-        @if (ApplicationState.Coordinator is not null)
+        @if (ApplicationState.Coordinator is not null && ApplicationState.Coordinator != "")
         {
-            <MudAlert Severity="Severity.Success" class="mb-1" style="overflow-wrap: break-word;">The Wasabi coordinator is currently set to @ApplicationState.Coordinator </MudAlert>
+            <MudAlert Severity="Severity.Success" class="mb-1" style="overflow-wrap: break-word;">The Wasabi coordinator
+                is currently set to @ApplicationState.Coordinator </MudAlert>
+        }
 
-
-            <MudPaper Outlined="true" Class="pb-0">
+        if (true)
+        {
+         <MudPaper Outlined="true" Class="pb-0">
                 @if (ApplicationState.Discovering)
                 {
                     <MudProgressLinear Color="Color.Primary" Indeterminate="true"/>
