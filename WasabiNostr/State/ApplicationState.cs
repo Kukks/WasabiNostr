@@ -166,10 +166,6 @@ var options = new []{NetworkTypeDetected.ToLower(), $"{NetworkTypeDetected.ToLow
                     }
 
                     Coordinator = GetCoordinator(config, NetworkTypeDetected);
-                    if (Coordinator is null)
-                    {
-                        WasabiConfigError = true;
-                    }
                 }
             }
             else
