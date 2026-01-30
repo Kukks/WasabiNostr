@@ -217,7 +217,7 @@ var options = new []{NetworkTypeDetected.ToLower(), $"{NetworkTypeDetected.ToLow
             
             endpoint = endpoint.Replace("plugins/wabisabi-coordinator/plugins/wabisabi-coordinator", "plugins/wabisabi-coordinator");
             var res = await client.PostAsync(new Uri(new Uri(endpoint), "wabisabi/status"),
-                new StringContent("{\"roundCheckpoints\": []}", Encoding.UTF8, MediaTypeNames.Application.Json));
+                new StringContent("{\"RoundCheckpoints\": []}", Encoding.UTF8, MediaTypeNames.Application.Json));
             if (!res.IsSuccessStatusCode)
             {
                 return "Could not connect";
